@@ -27,7 +27,11 @@ switch(command) {
         });
         break;
     case 'remove':
-        remove();
+        remove(title, error => {
+            if (error) return console.error(error.message);
+            
+            console.log('Note is deleted!');
+        });
         break;
     default:
         console.log('Uknown Command');
@@ -61,6 +65,22 @@ function create(title, content, done) {
         
         const notes = JSON.parse(data);
         notes.push({ title, content });
+
+        const json = JSON.stringify(notes);
+        fs.writeFile('notes.json', json, error => {
+            if (error) return done(error);
+
+            done();
+        });
+    });
+}
+
+function remove(title, done) {
+    fs.readFile('notes.json', (error, data) => {
+        if (error) return done(error);
+        
+        let notes = JSON.parse(data);
+        notes = notes.filter(note => note.title !== title);
 
         const json = JSON.stringify(notes);
         fs.writeFile('notes.json', json, error => {
