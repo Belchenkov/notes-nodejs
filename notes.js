@@ -38,19 +38,13 @@ switch(command) {
 }
 
 function list(done) {
-    fs.readFile('notes.json', (error, data) => {
-        if (error) return done(error);
-        
-        const notes = JSON.parse(data);
-        done(null, notes);
-    });
+    load(done);
 }
 
 function view(title, done) {
-    fs.readFile('notes.json', (error, data) => {
+    load((error, notes) => {
         if (error) return done(error);
         
-        const notes = JSON.parse(data);
         const note = notes.find(note => note.title === title);
 
         if (!note) return done(new Error('Notes is not found'));
@@ -60,33 +54,54 @@ function view(title, done) {
 }
 
 function create(title, content, done) {
-    fs.readFile('notes.json', (error, data) => {
+    load((error, notes) => {
         if (error) return done(error);
         
-        const notes = JSON.parse(data);
         notes.push({ title, content });
 
-        const json = JSON.stringify(notes);
-        fs.writeFile('notes.json', json, error => {
-            if (error) return done(error);
-
-            done();
-        });
+        save(notes, done);
     });
 }
 
 function remove(title, done) {
-    fs.readFile('notes.json', (error, data) => {
+    load((error, notes) => {
         if (error) return done(error);
         
-        let notes = JSON.parse(data);
         notes = notes.filter(note => note.title !== title);
 
+        save(notes, done);
+    });
+}
+
+function load(done) {
+    fs.readFile('notes.json', (error, data) => {
+        if (error) {
+            if (error.code === 'ENOENT') {
+                return done(null, []);
+            } else {
+                return done(error);
+            }
+        }
+        
+        try {
+            const notes = JSON.parse(data);
+            done(null, notes);
+        } catch (error) {
+            done(new Error('Cannot get data!'));
+        }
+    });
+}
+
+function save(notes, done) {
+    try {
         const json = JSON.stringify(notes);
         fs.writeFile('notes.json', json, error => {
             if (error) return done(error);
 
             done();
         });
-    });
+    } catch(error) {
+        done(error);
+    }
+
 }
